@@ -26,7 +26,7 @@ jobs:
           mkdir -p out
           # PAS AAN: kies jouw openapi entrypoint in source/
           # Voorbeeld:
-          redoc-cli bundle source/openapi.yaml -o out/index.html
+          redoc-cli bundle source/spec.yaml -o out/index.html
 
       - name: Checkout pub repo
         uses: actions/checkout@v4
