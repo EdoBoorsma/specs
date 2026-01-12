@@ -1,8 +1,8 @@
-name: Publish specs to pub (versioned)
+name: Publish specs to pub (latest)
 
 on:
   push:
-    tags: ["v*.*.*"]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
@@ -11,12 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Bundle and publish to pub
+      - name: Bundle and publish to pub (latest)
         run: |
           npm i -g @redocly/cli
 
-          TAG="${GITHUB_REF_NAME}"
-          MINOR="$(echo "$TAG" | awk -F. '{print $1"."$2}')"  # v6.0
+          # Read current series from source/version (e.g. "v6.1")
+          MINOR="$(cat source/version | tr -d ' \n\r\t')"
 
           rm -rf out && mkdir -p out
 
@@ -26,15 +26,23 @@ jobs:
           sed -i 's/spec-url="spec\.yaml"/spec-url="bundle.yaml"/' out/index.html
 
           git clone https://${{ secrets.PUB_TOKEN }}@github.com/EdoBoorsma/pub.git pub
+
           DEST="pub/specification/${MINOR}"
           mkdir -p "$DEST"
 
           cp -f out/bundle.yaml "$DEST/bundle.yaml"
           cp -f out/index.html   "$DEST/index.html"
 
+          # Optional alias: pub/specification/latest
+          LATEST="pub/specification/latest"
+          mkdir -p "$LATEST"
+          cp -f out/bundle.yaml "$LATEST/bundle.yaml"
+          cp -f out/index.html  "$LATEST/index.html"
+
           cd pub
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add "specification/${MINOR}/bundle.yaml" "specification/${MINOR}/index.html"
-          git commit -m "Publish specs ${GITHUB_REF_NAME} -> specification/${MINOR}" || exit 0
+          git add "specification/${MINOR}/bundle.yaml" "specification/${MINOR}/index.html" \
+                  "specification/latest/bundle.yaml" "specification/latest/index.html"
+          git commit -m "Publish specs main -> specification/${MINOR} (latest)" || exit 0
           git push
