@@ -11,45 +11,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Compute minor folder (v6.0)
-        run: |
-          TAG="${GITHUB_REF_NAME}"
-          echo "MINOR=$(echo "$TAG" | awk -F. '{print $1"."$2}')" >> "$GITHUB_ENV"
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Build docs (ignore only oneOff errors)
+      - name: Build docs
         run: |
           npm i -g @redocly/cli
           rm -rf out && mkdir -p out
+          redocly build-docs source/spec.yaml -o out/index.html
+          test -s out/index.html
 
-          set +e
-          redocly build-docs source/spec.yaml -o out/index.html 2>&1 | tee builddocs.log
-          RC=${PIPESTATUS[0]}
-          set -e
-
-          if [ $RC -ne 0 ]; then
-            # Alleen "oneOff" errors negeren; alles anders is fataal
-            if grep -qi "oneOff" builddocs.log; then
-              echo "build-docs failed, but only oneOff detected -> continuing"
-            else
-              echo "build-docs failed (not oneOff) -> failing workflow"
-              exit $RC
-            fi
-          fi
-
-      - name: Publish if output exists
+      - name: Publish to pub
         run: |
-          [ -s out/index.html ] || exit 0
           git clone https://${{ secrets.PUB_TOKEN }}@github.com/EdoBoorsma/pub.git pub
+
+          TAG="${GITHUB_REF_NAME}"
+          MINOR="$(echo "$TAG" | awk -F. '{print $1"."$2}')"  # v6.0
+
           DEST="pub/specification/${MINOR}"
           mkdir -p "$DEST"
           cp -f out/index.html "$DEST/index.html"
+
           cd pub
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add .
+          git add "specification/${MINOR}/index.html"
           git commit -m "Publish specs ${GITHUB_REF_NAME} -> specification/${MINOR}" || exit 0
           git push
