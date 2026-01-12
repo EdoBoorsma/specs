@@ -21,6 +21,7 @@ jobs:
           rm -rf out && mkdir -p out
 
           redocly bundle source/spec.yaml -o out/bundle.yaml
+          redocly bundle source/spec.yaml -o out/ooapiv6.json --output-format json
 
           cp -f source/docs.html out/index.html
           sed -i 's/spec-url="spec\.yaml"/spec-url="bundle.yaml"/' out/index.html
@@ -31,18 +32,20 @@ jobs:
           mkdir -p "$DEST"
 
           cp -f out/bundle.yaml "$DEST/bundle.yaml"
+          cp -f out/ooapiv6.json "$DEST/ooapiv6.json"
           cp -f out/index.html   "$DEST/index.html"
 
           # Optional alias: pub/specification/latest
           LATEST="pub/specification/latest"
           mkdir -p "$LATEST"
           cp -f out/bundle.yaml "$LATEST/bundle.yaml"
+          cp -f out/ooapiv6.json "$LATEST/ooapiv6.json"
           cp -f out/index.html  "$LATEST/index.html"
 
           cd pub
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add "specification/${MINOR}/bundle.yaml" "specification/${MINOR}/index.html" \
-                  "specification/latest/bundle.yaml" "specification/latest/index.html"
+          git add "specification/${MINOR}/bundle.yaml" "specification/${MINOR}/ooapiv6.json" "specification/${MINOR}/index.html" \
+                  "specification/latest/bundle.yaml" "specification/latest/ooapiv6.json" "specification/latest/index.html"
           git commit -m "Publish specs main -> specification/${MINOR} (latest)" || exit 0
           git push
