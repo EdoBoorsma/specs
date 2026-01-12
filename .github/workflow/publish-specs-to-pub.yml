@@ -1,0 +1,52 @@
+name: Publish specs to pub (versioned)
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout specs repo
+        uses: actions/checkout@v4
+
+      - name: Compute minor folder (v6.1)
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          MINOR="$(echo "$TAG" | awk -F. '{print $1"."$2}')"
+          echo "MINOR=$MINOR" >> $GITHUB_ENV
+
+      - name: Install redoc-cli
+        run: npm i -g redoc-cli
+
+      - name: Build Redoc (adjust input file)
+        run: |
+          mkdir -p out
+          # PAS AAN: kies jouw openapi entrypoint in source/
+          # Voorbeeld:
+          redoc-cli bundle source/openapi.yaml -o out/index.html
+
+      - name: Checkout pub repo
+        uses: actions/checkout@v4
+        with:
+          repository: EdoBoorsma/pub
+          token: ${{ secrets.PUB_TOKEN }}
+          path: pub
+
+      - name: Copy spec docs into /specification/<minor>/
+        run: |
+          DEST="pub/specification/${MINOR}"
+          rm -rf "$DEST"
+          mkdir -p "$DEST"
+          cp -R out/* "$DEST/"
+
+      - name: Commit and push
+        run: |
+          cd pub
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add .
+          git commit -m "Publish specs ${GITHUB_REF_NAME} -> specification/${MINOR}" || exit 0
+          git push
