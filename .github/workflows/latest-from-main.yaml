@@ -1,4 +1,4 @@
-name: Publish specs to pub (latest)
+name: Publish specs to pub (versioned)
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Bundle and publish to pub (latest)
+      - name: Bundle and publish to pub
         run: |
           npm i -g @redocly/cli
 
@@ -31,21 +31,15 @@ jobs:
           DEST="pub/specification/${MINOR}"
           mkdir -p "$DEST"
 
-          cp -f out/bundle.yaml "$DEST/bundle.yaml"
+          cp -f out/bundle.yaml  "$DEST/bundle.yaml"
           cp -f out/ooapiv6.json "$DEST/ooapiv6.json"
           cp -f out/index.html   "$DEST/index.html"
-
-          # Optional alias: pub/specification/latest
-          LATEST="pub/specification/latest"
-          mkdir -p "$LATEST"
-          cp -f out/bundle.yaml "$LATEST/bundle.yaml"
-          cp -f out/ooapiv6.json "$LATEST/ooapiv6.json"
-          cp -f out/index.html  "$LATEST/index.html"
 
           cd pub
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add "specification/${MINOR}/bundle.yaml" "specification/${MINOR}/ooapiv6.json" "specification/${MINOR}/index.html" \
-                  "specification/latest/bundle.yaml" "specification/latest/ooapiv6.json" "specification/latest/index.html"
-          git commit -m "Publish specs main -> specification/${MINOR} (latest)" || exit 0
+          git add "specification/${MINOR}/bundle.yaml" \
+                  "specification/${MINOR}/ooapiv6.json" \
+                  "specification/${MINOR}/index.html"
+          git commit -m "Publish specs main -> specification/${MINOR}" || exit 0
           git push
