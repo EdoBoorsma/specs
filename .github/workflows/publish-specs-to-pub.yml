@@ -17,8 +17,8 @@ jobs:
       - name: Compute minor folder (v6.0)
         shell: bash
         run: |
-          TAG="${GITHUB_REF_NAME}"                         # e.g. v6.0.0
-          MINOR="$(echo "$TAG" | awk -F. '{print $1"."$2}')" # v6.0
+          TAG="${GITHUB_REF_NAME}"                           # e.g. v6.0.0
+          MINOR="$(echo "$TAG" | awk -F. '{print $1"."$2}')"  # v6.0
           echo "MINOR=$MINOR" >> "$GITHUB_ENV"
 
       - name: Setup Node
@@ -26,11 +26,23 @@ jobs:
         with:
           node-version: 18
 
-      - name: Build specification docs (Redocly)
+      - name: Increase Node heap (avoid OOM)
+        shell: bash
+        run: echo "NODE_OPTIONS=--max-old-space-size=8192" >> "$GITHUB_ENV"
+
+      - name: Install Redocly CLI
+        shell: bash
+        run: npm i -g @redocly/cli
+
+      - name: Lint OpenAPI (fails on errors)
+        shell: bash
+        run: redocly lint source/spec.yaml
+
+      - name: Build spec docs (Redocly)
         shell: bash
         run: |
           mkdir -p out
-          npx --yes @redocly/cli build-docs source/spec.yaml -o out/index.html
+          redocly build-docs source/spec.yaml -o out/index.html
 
       - name: Checkout pub repo
         uses: actions/checkout@v4
