@@ -11,27 +11,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build docs
+      - name: Bundle and publish to pub
         run: |
           npm i -g @redocly/cli
-          rm -rf out && mkdir -p out
-          redocly build-docs source/spec.yaml -o out/index.html
-          test -s out/index.html
-
-      - name: Publish to pub
-        run: |
-          git clone https://${{ secrets.PUB_TOKEN }}@github.com/EdoBoorsma/pub.git pub
 
           TAG="${GITHUB_REF_NAME}"
           MINOR="$(echo "$TAG" | awk -F. '{print $1"."$2}')"  # v6.0
 
+          rm -rf out && mkdir -p out
+
+          redocly bundle source/spec.yaml -o out/bundle.yaml
+
+          cp -f source/docs.html out/docs.html
+          sed -i 's/spec-url="spec\.yaml"/spec-url="bundle.yaml"/' out/docs.html
+
+          git clone https://${{ secrets.PUB_TOKEN }}@github.com/EdoBoorsma/pub.git pub
           DEST="pub/specification/${MINOR}"
           mkdir -p "$DEST"
-          cp -f out/index.html "$DEST/index.html"
+
+          cp -f out/bundle.yaml "$DEST/bundle.yaml"
+          cp -f out/docs.html   "$DEST/docs.html"
 
           cd pub
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add "specification/${MINOR}/index.html"
+          git add "specification/${MINOR}/bundle.yaml" "specification/${MINOR}/docs.html"
           git commit -m "Publish specs ${GITHUB_REF_NAME} -> specification/${MINOR}" || exit 0
           git push

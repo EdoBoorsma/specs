@@ -36,7 +36,6 @@ rules:
   path-segment-plural: off
   no-invalid-schema-examples: off
   no-required-schema-properties-undefined: off
-  oneOff: off # Custom rule to ignore oneOff issues in build docs
 
 #  array-parameter-serialization: off
 #  request-mime-type: off
